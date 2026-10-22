@@ -143,3 +143,31 @@ code { font-family: var(--f-mono); }
   .note-form { grid-template-columns: minmax(0, 1fr); }
   .note-time { justify-self: start; }
 }
+
+/* Lý thuyết */
+.theory { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; display: grid; gap: 14px; min-width: 0; }
+.theory-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; }
+.theory-head h3 { font-size: 16px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg button { font: inherit; font-size: 13px; padding: 5px 12px; border: 0; background: transparent; color: var(--muted); cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button.on { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.seg button:disabled { opacity: .45; cursor: default; }
+.md { min-width: 0; max-width: 78ch; }
+.md h1 { font-size: 20px; margin: 0 0 8px; }
+.md h4 { font-size: 18px; margin: 0 0 6px; }
+.md p, .md ul, .md ol { margin: 8px 0; }
+.md li { margin: 3px 0; }
+.md code { font-size: 13px; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
+.md pre { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; overflow-x: auto; margin: 10px 0; }
+.md pre code { background: none; border: 0; padding: 0; font-size: 13px; line-height: 1.55; }
+.md table { border-collapse: collapse; display: block; overflow-x: auto; margin: 10px 0; font-size: 14px; }
+.md th, .md td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
+.md th { background: var(--bg); }
+.md blockquote { margin: 10px 0; padding: 8px 14px; border-left: 3px solid var(--started); background: var(--bg); border-radius: 0 8px 8px 0; }
+.md blockquote p { margin: 0; }
+.md details { border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; margin: 8px 0; }
+.md details[open] { background: var(--bg); }
+.md summary { cursor: pointer; font-weight: 500; }
+.md details > :not(summary) { margin-top: 8px; }
+.md article + article, article.md + article.md { border-top: 1px solid var(--line); padding-top: 14px; }

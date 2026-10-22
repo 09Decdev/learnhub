@@ -6,6 +6,7 @@ import { cleanName, fmtTime, go, leadingNo } from "../util";
 import Player from "./Player";
 import Notes from "./Notes";
 import DocView from "./DocView";
+import Theory from "./Theory";
 
 export default function CoursePage({ courseId, fileId }: { courseId: string; fileId?: string }) {
   const course = useStore((s) => s.courses.find((c) => c.folderId === courseId));
@@ -158,6 +159,10 @@ export default function CoursePage({ courseId, fileId }: { courseId: string; fil
                 )}
               </div>
             </div>
+
+            {current.kind === "video" && (
+              <Theory labMap={course.labMap} chapterName={current.chapter.name} fileName={current.name} />
+            )}
 
             {lab && (
               <a className="lab-card" href={lab.url} target="_blank" rel="noopener">
