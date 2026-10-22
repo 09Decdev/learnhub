@@ -1,14 +1,12 @@
 name: Deploy on github pages
 on:
   push:
-    branches:[
-      main
-    ]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
-  id-token: write
+  pages: write
   id-token: write
 
 concurrency:
@@ -28,8 +26,8 @@ jobs:
       - run: for n in 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17; do node scripts/check-theory.mjs $n; done
       - run: npm run build
         env:
-          BASE_URL: /learnhub/
-          VITE_GOOGLE_CLIENT_ID: ${{ var.VITE_GOOGLE_CLIENT_ID }}
+          BASE_PATH: /learnhub/
+          VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID }}
     
       - uses: actions/upload-pages-artifact@v5
         with:
