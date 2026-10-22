@@ -171,3 +171,4 @@ code { font-family: var(--f-mono); }
 .md summary { cursor: pointer; font-weight: 500; }
 .md details > :not(summary) { margin-top: 8px; }
 .md article + article, article.md + article.md { border-top: 1px solid var(--line); padding-top: 14px; }
+.md p, .md li, .md a, .md summary { overflow-wrap: anywhere; }

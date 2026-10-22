@@ -1,10 +1,11 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { marked } from "marked";
 import { leadingNo } from "../util";
 
 // Lý thuyết viết bằng Markdown: src/content/<labMap>/<số chương>.md
 // Mỗi phần "## Tiêu đề {011-014}" gắn với các video số 011 tới 014 của chương.
-const FILES = import.meta.glob("../content/*/*.md", { query: "?raw", import: "default", eager: true }) as Record<string, string>;
+// Mỗi chương là một file riêng, chỉ tải khi người học mở chương đó.
+const FILES = import.meta.glob("../content/*/*.md", { query: "?raw", import: "default" }) as Record<string, () => Promise<string>>;
 
 type Section = { title: string; from: number; to: number; body: string };
 type Doc = { intro: string; sections: Section[] };
@@ -33,7 +34,14 @@ export function hasTheory(labMap: string | undefined, chapterName: string) {
 
 export default function Theory({ labMap, chapterName, fileName }: { labMap?: string; chapterName: string; fileName: string }) {
   const [whole, setWhole] = useState(false);
-  const raw = labMap ? FILES[`../content/${labMap}/${leadingNo(chapterName).padStart(2, "0")}.md`] : undefined;
+  const loader = labMap ? FILES[`../content/${labMap}/${leadingNo(chapterName).padStart(2, "0")}.md`] : undefined;
+  const [raw, setRaw] = useState<string | undefined>();
+  useEffect(() => {
+    setRaw(undefined);
+    let alive = true;
+    loader?.().then((t) => { if (alive) setRaw(t); });
+    return () => { alive = false; };
+  }, [loader]);
   const doc = useMemo(() => (raw ? parse(raw) : null), [raw]);
   const v0 = Number(leadingNo(fileName));
   const key = doc?.sections.findIndex((s) => v0 >= s.from && v0 <= s.to) ?? -1;
