@@ -20,6 +20,8 @@ async function registerStreamWorker() {
 }
 
 window.addEventListener("pagehide", flush);
+// Ẩn tab (chuyển tab, khoá màn hình điện thoại) là lúc an toàn nhất để lưu: trang vẫn còn sống.
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") flush(); });
 
 const root = createRoot(document.getElementById("root")!);
 registerStreamWorker()

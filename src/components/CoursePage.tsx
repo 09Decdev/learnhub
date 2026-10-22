@@ -1,14 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { allLessons, cachedTree, loadTree, type CourseTree, type Lesson } from "../course";
-import { setDone, setLast, useStore } from "../store";
+import { getState, labKey, setDone, setLabDone, setLast, useStore } from "../store";
+import { downloadNotes } from "../exportNotes";
 import { labFor, trackerFor } from "../data/labMaps";
 import { cleanName, fmtTime, go, leadingNo } from "../util";
 import Player from "./Player";
 import Notes from "./Notes";
 import DocView from "./DocView";
 import Theory from "./Theory";
+import FocusTimer from "./FocusTimer";
 
-export default function CoursePage({ courseId, fileId }: { courseId: string; fileId?: string }) {
+const FOCUS_KEY = "learnhub.focus";
+
+export default function CoursePage({ courseId, fileId, t }: { courseId: string; fileId?: string; t?: number }) {
   const course = useStore((s) => s.courses.find((c) => c.folderId === courseId));
   const progress = useStore((s) => s.progress);
   const last = useStore((s) => s.last[courseId]);
@@ -19,6 +23,12 @@ export default function CoursePage({ courseId, fileId }: { courseId: string; fil
   const [autoNext, setAutoNext] = useState(true);
   const [seekTo, setSeekTo] = useState<{ t: number; n: number } | null>(null);
   const [now, setNow] = useState(0);
+  const labs = useStore((s) => s.labs);
+  const [focus, setFocus] = useState(() => { try { return localStorage.getItem(FOCUS_KEY) === "on"; } catch { return false; } });
+  const toggleFocus = () => setFocus((f) => {
+    try { localStorage.setItem(FOCUS_KEY, f ? "off" : "on"); } catch { /* bỏ qua */ }
+    return !f;
+  });
 
   const refresh = () => {
     setLoading(true); setError("");
@@ -35,7 +45,7 @@ export default function CoursePage({ courseId, fileId }: { courseId: string; fil
     const target = last?.fileId && lessons.some((l) => l.id === last.fileId)
       ? last.fileId
       : (videos.find((v) => !progress[v.id]?.done) ?? videos[0])?.id;
-    if (target) go(`#/c/${courseId}/${target}`);
+    if (target) location.replace(`#/c/${courseId}/${target}`); // không thêm vào lịch sử, để nút Back vẫn về trang trước
   }, [tree, fileId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const current = lessons.find((l) => l.id === fileId);
@@ -45,6 +55,11 @@ export default function CoursePage({ courseId, fileId }: { courseId: string; fil
     setOpenCh((o) => ({ ...o, [current.chapter.id]: true }));
     setSeekTo(null);
   }, [current?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Mở link có ?t= khi đang ở đúng video đó: Player không tải lại, nên tua trực tiếp.
+  useEffect(() => {
+    if (t !== undefined) setSeekTo({ t, n: Date.now() });
+  }, [t, current?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!course) {
     return (
@@ -65,6 +80,7 @@ export default function CoursePage({ courseId, fileId }: { courseId: string; fil
   const lessonRow = (l: Lesson, chapterName: string) => {
     const p = progress[l.id];
     const state = p?.done ? "done" : p && p.pos > 5 ? "started" : "new";
+    const rowLab = labFor(course.labMap, chapterName, l.name);
     return (
       <li key={l.id}>
         <a href={`#/c/${courseId}/${l.id}`} className={"lesson " + state + (l.id === fileId ? " active" : "")}
@@ -74,14 +90,16 @@ export default function CoursePage({ courseId, fileId }: { courseId: string; fil
           <span className="lesson-meta">
             {l.kind === "video" ? (p?.done ? "✓" : l.duration ? fmtTime(l.duration) : "") : l.kind === "doc" ? "đọc" : "file"}
           </span>
-          {labFor(course.labMap, chapterName, l.name) && <span className="lab-dot" title="Có lab trong repo" />}
+          {rowLab && (labs[labKey(courseId, rowLab.path)]?.done
+            ? <span className="lab-dot done" title="Đã tự làm lab này" />
+            : <span className="lab-dot" title="Có lab trong repo" />)}
         </a>
       </li>
     );
   };
 
   return (
-    <div className="course">
+    <div className={"course" + (focus ? " focus" : "")}>
       <aside className="sidebar" aria-label="Danh sách bài học">
         <div className="sidebar-head">
           <a href="#/" className="back">← Tất cả khoá học</a>
@@ -90,6 +108,7 @@ export default function CoursePage({ courseId, fileId }: { courseId: string; fil
           <div className="muted small">{doneCount}/{videos.length} video đã xem xong</div>
           <div className="sidebar-actions">
             <button className="btn ghost small" onClick={refresh} disabled={loading}>{loading ? "Đang tải…" : "Tải lại danh sách"}</button>
+            {tree && <button className="btn ghost small" onClick={() => downloadNotes(course, tree, getState())}>Xuất ghi chú .md</button>}
             {tracker && <a className="btn ghost small" href={tracker} target="_blank" rel="noopener">Lộ trình 16 tuần ↗</a>}
           </div>
         </div>
@@ -119,8 +138,16 @@ export default function CoursePage({ courseId, fileId }: { courseId: string; fil
         ) : (
           <>
             <div className="lesson-head">
-              <div className="muted small">{current.chapter.name}</div>
-              <h2>{cleanName(current.name)}</h2>
+              <div>
+                <div className="muted small">{current.chapter.name}</div>
+                <h2>{cleanName(current.name)}</h2>
+              </div>
+              <div className="row">
+                {focus && <FocusTimer />}
+                <button className={"btn small " + (focus ? "primary" : "ghost")} onClick={toggleFocus} aria-pressed={focus}>
+                  {focus ? "Thoát tập trung" : "Chế độ tập trung"}
+                </button>
+              </div>
             </div>
 
             {current.kind === "video" ? (
@@ -128,6 +155,8 @@ export default function CoursePage({ courseId, fileId }: { courseId: string; fil
                 key={current.id}
                 fileId={current.id}
                 size={Number(current.size || 0)}
+                subs={current.subs}
+                startAt={t}
                 seekTo={seekTo}
                 onTime={setNow}
                 onEnded={() => { if (autoNext && next) go(`#/c/${courseId}/${next.id}`); }}
@@ -165,13 +194,22 @@ export default function CoursePage({ courseId, fileId }: { courseId: string; fil
               <Theory labMap={course.labMap} chapterName={current.chapter.name} fileName={current.name} />
             )}
 
-            {lab && (
-              <a className="lab-card" href={lab.url} target="_blank" rel="noopener">
-                <span className="lab-label">LAB THỰC HÀNH</span>
-                <code>{lab.path}</code>
-                <span className="muted small">Xem video xong, tắt video và tự làm lab này trong repo devops-learning ↗</span>
-              </a>
-            )}
+            {lab && (() => {
+              const labDone = !!labs[labKey(courseId, lab.path)]?.done;
+              return (
+                <div className={"lab-card" + (labDone ? " done" : "")}>
+                  <a href={lab.url} target="_blank" rel="noopener" className="lab-link">
+                    <span className="lab-label">LAB THỰC HÀNH</span>
+                    <code>{lab.path}</code>
+                    <span className="muted small">Xem video xong, tắt video và tự làm lab này trong repo devops-learning ↗</span>
+                  </a>
+                  <label className="check lab-check">
+                    <input type="checkbox" checked={labDone} onChange={(e) => setLabDone(courseId, lab.path, e.target.checked)} />
+                    {labDone ? "Đã tự làm xong lab này" : "Đánh dấu đã tự làm lab"}
+                  </label>
+                </div>
+              );
+            })()}
 
           </>
         )}

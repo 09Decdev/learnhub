@@ -167,13 +167,18 @@ export async function readAppState<T>(): Promise<T | null> {
   return (await api(`${DRIVE}/files/${stateFileId}?alt=media`)).json();
 }
 
-export async function writeAppState(data: unknown) {
+// Trình duyệt chỉ cho request keepalive mang tối đa 64 KB.
+const KEEPALIVE_LIMIT = 60_000;
+
+/** keepalive: để lần lưu cuối vẫn đi tiếp khi tab đang đóng. */
+export async function writeAppState(data: unknown, opts: { keepalive?: boolean } = {}) {
   const body = JSON.stringify(data);
   if (stateFileId) {
     await api(`${UPLOAD}/files/${stateFileId}?uploadType=media`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body,
+      keepalive: !!opts.keepalive && new Blob([body]).size < KEEPALIVE_LIMIT,
     });
     return;
   }

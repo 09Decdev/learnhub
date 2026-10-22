@@ -7,6 +7,15 @@ Web học riêng cho các khoá học có video lưu trên Google Drive.
 - Nhớ chính xác giây đang xem, đánh dấu đã xem xong, ghi chú theo mốc thời gian.
 - Gắn từng video với thư mục lab trong repo thực hành (xem `src/data/labMaps.ts`).
 - Không có máy chủ, không có database: tiến độ và ghi chú lưu trong `appDataFolder` trên Google Drive của chính người học.
+- **Hôm nay học gì**: trang chủ chỉ ra bài đang xem dở, bài tiếp theo, lab đi kèm và thời gian còn lại của chương.
+- **Thống kê**: lịch học 26 tuần, chuỗi ngày học liên tiếp, dự đoán ngày học xong, đặt mục tiêu (ví dụ 16 tuần).
+- **Ôn tập ngắt quãng** (`#/review`): bài tập trong phần lý thuyết thành thẻ hỏi–đáp, mở sau khi xem xong video của phần đó, ôn lại sau 1, 3, 7, 14, 30 ngày.
+- **Tìm kiếm** (phím `/`): tên bài, ghi chú, lý thuyết, phụ đề; gõ không dấu vẫn tìm được.
+- **Checklist lab**: đánh dấu đã tự làm lab, sidebar hiện chấm đặc cho lab đã xong.
+- **Đánh dấu nhanh** (phím `B`), **xuất ghi chú ra Markdown** với link mở lại đúng giây (`#/c/<khoá>/<video>?t=123`).
+- **Chế độ tập trung** với hẹn giờ 25 phút, hết giờ tự dừng video.
+- **Phụ đề**: file `.srt`/`.vtt` cùng tên với video được gắn tự động (phím `C`). **Cửa sổ nổi** (phím `P`).
+- **Cài như app** (PWA), mở được vỏ app khi mất mạng; giao diện sáng/tối chọn tay hoặc theo máy.
 
 ## Cách hoạt động
 

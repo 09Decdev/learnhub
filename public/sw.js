@@ -9,8 +9,15 @@ const DRIVE = "https://www.googleapis.com/drive/v3/files/";
 let token = null;
 const meta = new Map(); // fileId -> { size, type }
 
+// Vỏ app (HTML, JS, CSS, lý thuyết) được lưu lại để mở được khi mất mạng.
+// Đổi số phiên bản khi muốn bỏ hết bản cũ.
+const SHELL = "learnhub-shell-v1";
+
 self.addEventListener("install", () => self.skipWaiting());
-self.addEventListener("activate", (e) => e.waitUntil(self.clients.claim()));
+self.addEventListener("activate", (e) => e.waitUntil((async () => {
+  for (const k of await caches.keys()) if (k.startsWith("learnhub-shell-") && k !== SHELL) await caches.delete(k);
+  await self.clients.claim();
+})()));
 
 self.addEventListener("message", (e) => {
   if (e.data && e.data.type === "token") token = e.data.token;
@@ -91,10 +98,33 @@ async function stream(event, fileId) {
   return new Response(res.body, { status: range ? 206 : 200, headers });
 }
 
+// Ưu tiên mạng để luôn có bản mới; mất mạng thì dùng bản đã lưu.
+async function shell(request) {
+  const cache = await caches.open(SHELL);
+  try {
+    const res = await fetch(request);
+    if (res.ok && res.type === "basic") await cache.put(request, res.clone());
+    return res;
+  } catch (err) {
+    const hit = await cache.match(request, { ignoreSearch: true });
+    if (hit) return hit;
+    // Mở trang khi offline: trả về trang chính đã lưu (app định tuyến bằng #).
+    if (request.mode === "navigate") {
+      const index = await cache.match(self.registration.scope, { ignoreSearch: true });
+      if (index) return index;
+    }
+    throw err;
+  }
+}
+
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
-  const prefix = new URL(self.registration.scope).pathname + "stream/";
-  if (url.origin === self.location.origin && url.pathname.startsWith(prefix)) {
-    event.respondWith(stream(event, url.pathname.slice(prefix.length)));
+  const scope = new URL(self.registration.scope).pathname;
+  if (url.origin !== self.location.origin || event.request.method !== "GET") return;
+  if (url.pathname.startsWith(scope + "stream/")) {
+    event.respondWith(stream(event, url.pathname.slice(scope.length + "stream/".length)));
+  } else if (!url.pathname.startsWith("/@") && !url.pathname.includes("/node_modules/")) {
+    // Bỏ qua các request riêng của Vite dev server (/@vite, /@react-refresh, node_modules).
+    event.respondWith(shell(event.request));
   }
 });
