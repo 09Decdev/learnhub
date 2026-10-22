@@ -127,6 +127,7 @@ export default function CoursePage({ courseId, fileId }: { courseId: string; fil
               <Player
                 key={current.id}
                 fileId={current.id}
+                size={Number(current.size || 0)}
                 seekTo={seekTo}
                 onTime={setNow}
                 onEnded={() => { if (autoNext && next) go(`#/c/${courseId}/${next.id}`); }}
@@ -172,12 +173,15 @@ export default function CoursePage({ courseId, fileId }: { courseId: string; fil
               </a>
             )}
 
-            {current.kind === "video" && (
-              <Notes fileId={current.id} now={now} onSeek={(t) => setSeekTo({ t, n: Date.now() })} />
-            )}
           </>
         )}
       </main>
+
+      {current?.kind === "video" && (
+        <aside className="notes-panel" aria-label="Ghi chú của bài">
+          <Notes fileId={current.id} now={now} onSeek={(t) => setSeekTo({ t, n: Date.now() })} />
+        </aside>
+      )}
     </div>
   );
 }
